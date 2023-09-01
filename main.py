@@ -1,9 +1,11 @@
 import pygame
+import csv
 
-from constants import FONT_SIZE, ITEM_SCALE, POTION_SCALE, RED, SCREEN_HEIGHT, SCREEN_WIDTH, FPS, SCALE, SPEED, BACKGROUND_COLOR, UI_COLOR, WEAPON_SCALE, WHITE
+from constants import COLS, GRID, FONT_SIZE, ITEM_SCALE, POTION_SCALE, RED, ROWS, SCREEN_HEIGHT, SCREEN_WIDTH, FPS, SCALE, SPEED, BACKGROUND_COLOR, TILE_SIZE, TILE_TYPES, UI_COLOR, WEAPON_SCALE, WHITE
 from character import Character
 from item import Item
 from weapon import Weapon
+from world import World
 
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -11,7 +13,8 @@ pygame.display.set_caption("Dungeon Crawler")
 
 clock = pygame.time.Clock()
 font = pygame.font.Font("assets/fonts/AtariClassic.ttf", FONT_SIZE)
-
+level = 1
+screen_scroll = [0, 0]
 moving_left = False
 moving_right = False
 moving_up = False
@@ -58,11 +61,38 @@ for i in range(4):
     coin_images.append(img)
 
 # Load potion image
-red_potion_image = scale_img(pygame.image.load(f"assets/images/items/potion_red.png").convert_alpha(), POTION_SCALE)
+red_potion_images = [scale_img(pygame.image.load(f"assets/images/items/potion_red.png").convert_alpha(), POTION_SCALE)]
+
+items_images = []
+items_images.append(coin_images)
+items_images.append(red_potion_images)
+
+# Load map tiles
+tiles = []
+for x in range(TILE_TYPES):
+    tile = pygame.image.load(f"assets/images/tiles/{x}.png").convert_alpha()
+    tile = pygame.transform.scale(tile, (TILE_SIZE, TILE_SIZE))
+    tiles.append(tile)
+
+map = []
+for row in range(ROWS):
+    r = [-1] * COLS
+    map.append(r)
+
+with open(f"levels/level{level}_data.csv", newline="") as csvfile:
+    reader = csv.reader(csvfile, delimiter=",")
+    for y, row in enumerate(reader):
+        for x, col in enumerate(row):
+            map[y][x] = int(col)
 
 def draw_text(text, font, text_color, x, y):
     img = font.render(text, True, text_color)
     screen.blit(img, (x, y))
+
+def draw_grid():
+    for x in range(30):
+        pygame.draw.line(screen, WHITE, (x * TILE_SIZE, 0), (x * TILE_SIZE, SCREEN_HEIGHT))
+        pygame.draw.line(screen, WHITE, (0, x * TILE_SIZE), (SCREEN_WIDTH, x * TILE_SIZE))
 
 def draw_ui(player):
     # Draw UI panel
@@ -79,7 +109,7 @@ def draw_ui(player):
             screen.blit(half_heart, pos)
         else:
             screen.blit(empty_heart, pos)
-    
+    draw_text(f"LEVEL: {str(level)}", font, WHITE, SCREEN_WIDTH / 2, 15)
     draw_text(f"X{player.total_score}", font, WHITE, SCREEN_WIDTH - 100, 15)
 
 class DamageText(pygame.sprite.Sprite):
@@ -90,40 +120,42 @@ class DamageText(pygame.sprite.Sprite):
         self.rect.center = (x, y)
         self.counter = 0
 
-    def update(self):
+    def update(self, screen_scroll):
+        self.rect.x += screen_scroll[0]
+        self.rect.y += screen_scroll[1]
+
         self.rect.y -= 1
         self.counter += 1
         if self.counter > 30:
             self.kill()
 
-player_char_type = 0
-player = Character(x=100, y=100, health=80, max_health=100,char_type=player_char_type, animations=chars_animations[player_char_type])
+world = World()
+world.map(map, tiles, items_images, chars_animations)
+
+player = world.player
+enemies = world.enemies
 bow = Weapon(bow_image, arrow_image)
 
-enemy = Character(x=200, y=200, health=100, max_health=100, char_type=1, animations=chars_animations[1])
-
-enemies = []
 arrow_group = pygame.sprite.Group()
 damage_text_group = pygame.sprite.Group()
 item_group = pygame.sprite.Group()
 ui_item_group = pygame.sprite.Group()
 
-enemies.append(enemy)
-
 ui_coin = Item(SCREEN_WIDTH - 115, 23, 0, coin_images)
 ui_item_group.add(ui_coin)
 
-potion = Item(200, 200, 1, [red_potion_image])
-item_group.add(potion)
-
-coin = Item(400, 400, 0, coin_images)
-item_group.add(coin)
+for item in world.items:
+    item_group.add(item)
 
 # Game Loop
 run = True
 while run:
     clock.tick(FPS)
     screen.fill(BACKGROUND_COLOR)
+
+    if GRID:
+        draw_grid()
+
     dx = 0
     dy = 0
 
@@ -136,32 +168,35 @@ while run:
     if moving_down:
         dy = SPEED
 
-    player.move(dx, dy)
+    screen_scroll = player.move(dx, dy, world.obstacle_tiles)
 
+    world.update(screen_scroll)
     player.update()
     arrow = bow.update(player)
 
     if arrow:
         arrow_group.add(arrow)
 
+    world.draw(screen)
     player.draw(screen)    
     bow.draw(screen)
 
     for enemy in enemies:
+        enemy.ai(screen_scroll)
         enemy.update()
         enemy.draw(screen)
 
     for arrow in arrow_group:
-        damage, damage_pos = arrow.update(enemies)
+        damage, damage_pos = arrow.update(screen_scroll, enemies)
         if damage > 0 and damage_pos:
             damage_text = DamageText(damage_pos.centerx, damage_pos.y, str(damage), RED)
             damage_text_group.add(damage_text)
         arrow.draw(screen)
 
-    damage_text_group.update()
+    damage_text_group.update(screen_scroll)
     damage_text_group.draw(screen)
 
-    item_group.update(player)
+    item_group.update(player, screen_scroll)
     item_group.draw(screen)
 
     draw_ui(player)

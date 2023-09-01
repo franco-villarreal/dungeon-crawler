@@ -11,7 +11,10 @@ class Item(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = (x, y)
     
-    def update(self, player):
+    def update(self, player, screen_scroll=[0,0]):
+        self.rect.x += screen_scroll[0]
+        self.rect.y += screen_scroll[1]
+
         if player.rect.colliderect(self.rect):
             if self.item_type == 0:
                 player.score(1)
