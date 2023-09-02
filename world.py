@@ -1,5 +1,5 @@
 from character import Character
-from constants import TILE_SIZE
+from constants import PLAYER_INITIAL_HEALTH, TILE_SIZE
 from item import Item
 
 
@@ -39,7 +39,7 @@ class World():
                         tile[0] = tiles[0]
                     if col == 11:
                         char_type = 0
-                        player = Character(x=image_x, y=image_y, health=80, max_health=100,char_type=char_type, animations=char_animations[char_type])
+                        player = Character(x=image_x, y=image_y, health=PLAYER_INITIAL_HEALTH, max_health=100,char_type=char_type, animations=char_animations[char_type])
                         self.player = player
                         tile[0] = tiles[0]
                     if col >= 12 and col <= 16:
@@ -55,6 +55,7 @@ class World():
     
     def update(self, screen_scroll=[0,0]):
         for tile in self.map_tiles:
+            print(tile[2])
             tile[2] += screen_scroll[0]
             tile[3] += screen_scroll[1]
             tile[1].center = (tile[2], tile[3])

@@ -1,11 +1,11 @@
 import math
 import pygame
-from constants import ATTACK_RANGE, ENEMY_SPEED, OFFSET, RANGE, RED, SCALE, SCREEN_HEIGHT, SCREEN_WIDTH, SCROLL_THRESH, TILE_SIZE
+from constants import ATTACK_RANGE, COLLIDE_RECT, ENEMY_SPEED, OFFSET, RANGE, RED, SCALE, SCREEN_HEIGHT, SCREEN_WIDTH, SCROLL_THRESH, TILE_SIZE
 from weapon import Fireball
 
 class Character():
     def __init__(self, x, y, health, max_health, char_type, animations, boss = False):
-        self.rect = pygame.Rect(0, 0, TILE_SIZE, TILE_SIZE)
+        self.rect = pygame.Rect(0, 0, TILE_SIZE - 10, TILE_SIZE - 10)
         self.rect.center = (x, y)
         self.frame_index = 0
         self.action = 0 #0:idle, 1:run
@@ -26,8 +26,9 @@ class Character():
         self.boss = boss
         self.last_attack = pygame.time.get_ticks()
 
-    def move(self, dx, dy, obstacles):
+    def move(self, dx, dy, obstacles, exit = None):
         screen_scroll = [0, 0]
+        level_completed = False
 
         if not self.alive or self.stunned:
             return screen_scroll
@@ -60,6 +61,11 @@ class Character():
                     self.rect.top = obstacle[1].bottom
 
         if self.char_type == 0:
+            if exit[1].colliderect(self.rect):
+                exit_distance = math.sqrt(((self.rect.centerx - exit[1].centerx) ** 2) + ((self.rect.centery - exit[1].centery)** 2))
+                if exit_distance < 20:
+                    level_completed = True
+            
             left_offset = SCROLL_THRESH
             right_offset = (SCREEN_HEIGHT - SCROLL_THRESH)
             top_offset = SCROLL_THRESH
@@ -80,7 +86,7 @@ class Character():
                 self.rect.bottom = bottom_offset
             
 
-        return screen_scroll
+        return screen_scroll, level_completed
 
     def ai(self, player, obstacles, screen_scroll, fireball_image = None):
         dx = 0
@@ -172,7 +178,8 @@ class Character():
         else:
             surface.blit(flipped_image, self.rect)
 
-        pygame.draw.rect(surface, RED, self.rect, 1)
+        if COLLIDE_RECT:
+            pygame.draw.rect(surface, RED, self.rect, 1)
 
     def cure(self, amount):
         self.health += amount

@@ -1,19 +1,23 @@
 import pygame
+from pygame import mixer
 import csv
-
-from constants import COLS, FIREBALL_SCALE, GRID, FONT_SIZE, ITEM_SCALE, POTION_SCALE, RED, ROWS, SCREEN_HEIGHT, SCREEN_WIDTH, FPS, SCALE, SPEED, BACKGROUND_COLOR, TILE_SIZE, TILE_TYPES, UI_COLOR, WEAPON_SCALE, WHITE
-from character import Character
+from button import Button
+from constants import BLACK, BUTTON_SCALE, COLS, FIREBALL_SCALE, GRID, FONT_SIZE, ITEM_SCALE, MENU_COLOUR, PINK, POTION_SCALE, RED, ROWS, SCREEN_HEIGHT, SCREEN_WIDTH, FPS, SCALE, SPEED, BACKGROUND_COLOR, TILE_SIZE, TILE_TYPES, UI_COLOR, WEAPON_SCALE, WHITE
 from item import Item
 from weapon import Weapon
 from world import World
 
+mixer.init()
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Dungeon Crawler")
 
 clock = pygame.time.Clock()
 font = pygame.font.Font("assets/fonts/AtariClassic.ttf", FONT_SIZE)
-level = 3
+level = 1
+start_game = False
+pause_game = False
+start_intro = False
 screen_scroll = [0, 0]
 moving_left = False
 moving_right = False
@@ -26,6 +30,18 @@ def scale_img(image, scale):
 
     return pygame.transform.scale(image, (width * scale, height * scale))
 
+# Load music and sounds
+pygame.mixer.music.load("assets/audio/music.wav")
+pygame.mixer.music.set_volume(0.3)
+pygame.mixer.music.play(-1, 0.0, 5000)
+shot_fx =pygame.mixer.Sound("assets/audio/arrow_shot.mp3")
+shot_fx.set_volume(0.5)
+hit_fx =pygame.mixer.Sound("assets/audio/arrow_hit.wav")
+hit_fx.set_volume(0.5)
+coin_fx =pygame.mixer.Sound("assets/audio/coin.wav")
+coin_fx.set_volume(0.5)
+heal_fx =pygame.mixer.Sound("assets/audio/heal.wav")
+heal_fx.set_volume(0.5)
 # Load characters images
 char_types = ["elf", "imp", "skeleton", "goblin", "muddy", "tiny_zombie", "big_demon"]
 chars_animations = []
@@ -49,6 +65,12 @@ for char in char_types:
 bow_image = scale_img(pygame.image.load("assets/images/weapons/bow.png").convert_alpha(), WEAPON_SCALE)
 arrow_image = scale_img(pygame.image.load("assets/images/weapons/arrow.png").convert_alpha(), WEAPON_SCALE)
 fireball_image = scale_img(pygame.image.load("assets/images/weapons/fireball.png").convert_alpha(), FIREBALL_SCALE)
+
+# Load button images
+start_button_image = scale_img(pygame.image.load("assets/images/buttons/button_start.png").convert_alpha(), BUTTON_SCALE)
+exit_button_image = scale_img(pygame.image.load("assets/images/buttons/button_exit.png").convert_alpha(), BUTTON_SCALE)
+resume_button_image = scale_img(pygame.image.load("assets/images/buttons/button_resume.png").convert_alpha(), BUTTON_SCALE)
+restart_button_image = scale_img(pygame.image.load("assets/images/buttons/button_restart.png").convert_alpha(), BUTTON_SCALE)
 
 # Load heart images
 empty_heart = scale_img(pygame.image.load("assets/images/items/heart_empty.png").convert_alpha(), ITEM_SCALE)
@@ -74,17 +96,6 @@ for x in range(TILE_TYPES):
     tile = pygame.image.load(f"assets/images/tiles/{x}.png").convert_alpha()
     tile = pygame.transform.scale(tile, (TILE_SIZE, TILE_SIZE))
     tiles.append(tile)
-
-map = []
-for row in range(ROWS):
-    r = [-1] * COLS
-    map.append(r)
-
-with open(f"levels/level{level}_data.csv", newline="") as csvfile:
-    reader = csv.reader(csvfile, delimiter=",")
-    for y, row in enumerate(reader):
-        for x, col in enumerate(row):
-            map[y][x] = int(col)
 
 def draw_text(text, font, text_color, x, y):
     img = font.render(text, True, text_color)
@@ -113,6 +124,31 @@ def draw_ui(player):
     draw_text(f"LEVEL: {str(level)}", font, WHITE, SCREEN_WIDTH / 2, 15)
     draw_text(f"X{player.total_score}", font, WHITE, SCREEN_WIDTH - 100, 15)
 
+def load_map():
+    map = []
+    for row in range(ROWS):
+        r = [-1] * COLS
+        map.append(r)
+
+    with open(f"levels/level{level}_data.csv", newline="") as csvfile:
+        reader = csv.reader(csvfile, delimiter=",")
+        for y, row in enumerate(reader):
+            for x, col in enumerate(row):
+                map[y][x] = int(col)
+    
+    world = World()
+    world.map(map, tiles, items_images, chars_animations)
+
+    return world
+
+def reload_map():
+    damage_text_group.empty()
+    arrow_group.empty()
+    item_group.empty()
+    fireball_group.empty()
+
+    return load_map()
+
 class DamageText(pygame.sprite.Sprite):
     def __init__(self, x, y, damage, color):
         pygame.sprite.Sprite.__init__(self)
@@ -130,8 +166,38 @@ class DamageText(pygame.sprite.Sprite):
         if self.counter > 30:
             self.kill()
 
-world = World()
-world.map(map, tiles, items_images, chars_animations)
+class ScreenFade():
+    def __init__(self, colour, speed):
+        self.colour = colour
+        self.speed = speed
+        self.fade_counter = 0
+    
+    def fade_in(self):
+        completed = False
+        self.fade_counter += self.speed
+      
+        pygame.draw.rect(screen, self.colour, (0 - self.fade_counter, 0, SCREEN_WIDTH // 2, SCREEN_HEIGHT))
+        pygame.draw.rect(screen, self.colour, (SCREEN_WIDTH // 2 + self.fade_counter, 0, SCREEN_WIDTH, SCREEN_HEIGHT))
+        pygame.draw.rect(screen, self.colour, (0, 0 - self.fade_counter, SCREEN_WIDTH, SCREEN_HEIGHT // 2))
+        pygame.draw.rect(screen, self.colour, (0, SCREEN_HEIGHT // 2 + self.fade_counter, SCREEN_WIDTH, SCREEN_HEIGHT))
+    
+        if self.fade_counter >= SCREEN_WIDTH:
+            completed = True
+
+        return completed
+    
+    def fade_out(self):
+        completed = False
+        self.fade_counter += self.speed
+
+        pygame.draw.rect(screen, self.colour, (0, 0, SCREEN_WIDTH, 0 + self.fade_counter))
+
+        if self.fade_counter >= SCREEN_WIDTH:
+            completed = True
+
+        return completed
+    
+world = load_map()
 
 player = world.player
 enemies = world.enemies
@@ -149,68 +215,126 @@ ui_item_group.add(ui_coin)
 for item in world.items:
     item_group.add(item)
 
+intro_fade_in = ScreenFade(BLACK, 4)
+death_fade_out = ScreenFade(PINK, 4)
+start_button = Button(SCREEN_WIDTH // 2 - 145, SCREEN_HEIGHT // 2 - 150, start_button_image)
+exit_button = Button(SCREEN_WIDTH // 2 - 110, SCREEN_HEIGHT // 2 + 50, exit_button_image)
+resume_button = Button(SCREEN_WIDTH // 2 - 175, SCREEN_HEIGHT // 2 - 150, resume_button_image)
+restart_button = Button(SCREEN_WIDTH // 2 - 175, SCREEN_HEIGHT // 2 - 50, restart_button_image)
+
 # Game Loop
 run = True
 while run:
     clock.tick(FPS)
-    screen.fill(BACKGROUND_COLOR)
 
-    if GRID:
-        draw_grid()
+    if not start_game:
+        screen.fill(MENU_COLOUR)
+        if start_button.draw(screen):
+            start_game = True
+            start_intro = True
+        if exit_button.draw(screen):
+            run = False
+    
+    if start_game:
+        if pause_game:
+            if resume_button.draw(screen):
+                pause_game = False
+            if exit_button.draw(screen):
+                run = False
 
-    dx = 0
-    dy = 0
+        if not pause_game:
+            screen.fill(BACKGROUND_COLOR)
 
-    if moving_right:
-        dx = SPEED
-    if moving_left:
-        dx = -SPEED
-    if moving_up:
-        dy = -SPEED
-    if moving_down:
-        dy = SPEED
+            if GRID:
+                draw_grid()
 
-    screen_scroll = player.move(dx, dy, world.obstacle_tiles)
+            if player.alive:
+                dx = 0
+                dy = 0
 
-    world.update(screen_scroll)
-    player.update()
-    arrow = bow.update(player)
+                if moving_right:
+                    dx = SPEED
+                if moving_left:
+                    dx = -SPEED
+                if moving_up:
+                    dy = -SPEED
+                if moving_down:
+                    dy = SPEED
 
-    if arrow:
-        arrow_group.add(arrow)
+                screen_scroll, level_completed = player.move(dx, dy, world.obstacle_tiles, world.exit_tile)
+            
+                world.update(screen_scroll)
+                player.update()
+                arrow = bow.update(player)
 
-    world.draw(screen)
-    player.draw(screen)    
-    bow.draw(screen)
+                if arrow:
+                    shot_fx.play()
+                    arrow_group.add(arrow)
+                    
+            world.draw(screen)
+            player.draw(screen)    
+            bow.draw(screen)
 
-    for enemy in enemies:
-        fireball = enemy.ai(player, world.obstacle_tiles, screen_scroll, fireball_image)
-        if fireball:
-            fireball_group.add(fireball)
-        enemy.update()
-        enemy.draw(screen)
+            for enemy in enemies:
+                fireball = enemy.ai(player, world.obstacle_tiles, screen_scroll, fireball_image)
+                if fireball:
+                    fireball_group.add(fireball)
+                enemy.update()
+                enemy.draw(screen)
 
-    for arrow in arrow_group:
-        damage, damage_pos = arrow.update(screen_scroll, world.obstacle_tiles, enemies)
-        if damage > 0 and damage_pos:
-            damage_text = DamageText(damage_pos.centerx, damage_pos.y, str(damage), RED)
-            damage_text_group.add(damage_text)
-        arrow.draw(screen)
+            for arrow in arrow_group:
+                damage, damage_pos = arrow.update(screen_scroll, world.obstacle_tiles, enemies)
+                if damage > 0 and damage_pos:
+                    hit_fx.play()
+                    damage_text = DamageText(damage_pos.centerx, damage_pos.y, str(damage), RED)
+                    damage_text_group.add(damage_text)
+                arrow.draw(screen)
 
-    damage_text_group.update(screen_scroll)
-    damage_text_group.draw(screen)
+            damage_text_group.update(screen_scroll)
+            damage_text_group.draw(screen)
 
-    item_group.update(player, screen_scroll)
-    item_group.draw(screen)
+            item_group.update(player, screen_scroll, [coin_fx, heal_fx])
+            item_group.draw(screen)
 
-    fireball_group.update(screen_scroll, world.obstacle_tiles, player)
-    fireball_group.draw(screen)
+            fireball_group.update(screen_scroll, world.obstacle_tiles, player)
+            fireball_group.draw(screen)
 
-    draw_ui(player)
+            draw_ui(player)
 
-    ui_item_group.update(player)
-    ui_item_group.draw(screen)
+            ui_item_group.update(player)
+            ui_item_group.draw(screen)
 
+            if level_completed:
+                start_intro = True
+                level += 1
+                temp_player_score = player.total_score
+                temp_player_health= player.health
+                world = reload_map()
+                player = world.player
+                player.total_score = temp_player_score
+                player.health = temp_player_health
+                enemies = world.enemies
+
+                for item in world.items:
+                    item_group.add(item)
+            
+            if start_intro:
+                if intro_fade_in.fade_in():
+                    start_intro = False
+                    intro_fade_in.fade_counter = 0
+            
+            if not player.alive:
+                if death_fade_out.fade_out():
+                    if restart_button.draw(screen):
+                        death_fade_out.fade_counter = 0
+                        start_intro = True
+                        world = reload_map()
+                        player = world.player
+                        enemies = world.enemies
+
+                        for item in world.items:
+                            item_group.add(item)
+    #event-handler
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
@@ -224,6 +348,8 @@ while run:
                 moving_up = True
             if event.key == pygame.K_s:
                 moving_down = True
+            if event.key == pygame.K_ESCAPE:
+                pause_game = True
         
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_a:
