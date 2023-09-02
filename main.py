@@ -1,7 +1,7 @@
 import pygame
 import csv
 
-from constants import COLS, GRID, FONT_SIZE, ITEM_SCALE, POTION_SCALE, RED, ROWS, SCREEN_HEIGHT, SCREEN_WIDTH, FPS, SCALE, SPEED, BACKGROUND_COLOR, TILE_SIZE, TILE_TYPES, UI_COLOR, WEAPON_SCALE, WHITE
+from constants import COLS, FIREBALL_SCALE, GRID, FONT_SIZE, ITEM_SCALE, POTION_SCALE, RED, ROWS, SCREEN_HEIGHT, SCREEN_WIDTH, FPS, SCALE, SPEED, BACKGROUND_COLOR, TILE_SIZE, TILE_TYPES, UI_COLOR, WEAPON_SCALE, WHITE
 from character import Character
 from item import Item
 from weapon import Weapon
@@ -13,7 +13,7 @@ pygame.display.set_caption("Dungeon Crawler")
 
 clock = pygame.time.Clock()
 font = pygame.font.Font("assets/fonts/AtariClassic.ttf", FONT_SIZE)
-level = 1
+level = 3
 screen_scroll = [0, 0]
 moving_left = False
 moving_right = False
@@ -48,6 +48,7 @@ for char in char_types:
 # Load weapon images
 bow_image = scale_img(pygame.image.load("assets/images/weapons/bow.png").convert_alpha(), WEAPON_SCALE)
 arrow_image = scale_img(pygame.image.load("assets/images/weapons/arrow.png").convert_alpha(), WEAPON_SCALE)
+fireball_image = scale_img(pygame.image.load("assets/images/weapons/fireball.png").convert_alpha(), FIREBALL_SCALE)
 
 # Load heart images
 empty_heart = scale_img(pygame.image.load("assets/images/items/heart_empty.png").convert_alpha(), ITEM_SCALE)
@@ -140,6 +141,7 @@ arrow_group = pygame.sprite.Group()
 damage_text_group = pygame.sprite.Group()
 item_group = pygame.sprite.Group()
 ui_item_group = pygame.sprite.Group()
+fireball_group = pygame.sprite.Group()
 
 ui_coin = Item(SCREEN_WIDTH - 115, 23, 0, coin_images)
 ui_item_group.add(ui_coin)
@@ -182,12 +184,14 @@ while run:
     bow.draw(screen)
 
     for enemy in enemies:
-        enemy.ai(screen_scroll)
+        fireball = enemy.ai(player, world.obstacle_tiles, screen_scroll, fireball_image)
+        if fireball:
+            fireball_group.add(fireball)
         enemy.update()
         enemy.draw(screen)
 
     for arrow in arrow_group:
-        damage, damage_pos = arrow.update(screen_scroll, enemies)
+        damage, damage_pos = arrow.update(screen_scroll, world.obstacle_tiles, enemies)
         if damage > 0 and damage_pos:
             damage_text = DamageText(damage_pos.centerx, damage_pos.y, str(damage), RED)
             damage_text_group.add(damage_text)
@@ -198,6 +202,9 @@ while run:
 
     item_group.update(player, screen_scroll)
     item_group.draw(screen)
+
+    fireball_group.update(screen_scroll, world.obstacle_tiles, player)
+    fireball_group.draw(screen)
 
     draw_ui(player)
 

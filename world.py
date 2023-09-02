@@ -42,9 +42,14 @@ class World():
                         player = Character(x=image_x, y=image_y, health=80, max_health=100,char_type=char_type, animations=char_animations[char_type])
                         self.player = player
                         tile[0] = tiles[0]
-                    if col >= 12 and col <= 17:
+                    if col >= 12 and col <= 16:
                         char_type = col - 11
                         enemy = Character(x=image_x, y=image_y, health=100, max_health=100,char_type=char_type, animations=char_animations[char_type])
+                        self.enemies.append(enemy)
+                        tile[0] = tiles[0]
+                    if col == 17:
+                        char_type = col - 11
+                        enemy = Character(x=image_x, y=image_y, health=100, max_health=100,char_type=char_type, animations=char_animations[char_type], boss=True)
                         self.enemies.append(enemy)
                         tile[0] = tiles[0]
     
