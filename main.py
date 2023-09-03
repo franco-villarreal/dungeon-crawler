@@ -2,30 +2,22 @@ import pygame
 from pygame import mixer
 import csv
 from button import Button
-from constants import BLACK, BUTTON_SCALE, COLS, FIREBALL_SCALE, GRID, FONT_SIZE, ITEM_SCALE, MENU_COLOUR, PINK, POTION_SCALE, RED, ROWS, SCREEN_HEIGHT, SCREEN_WIDTH, FPS, SCALE, SPEED, BACKGROUND_COLOR, TILE_SIZE, TILE_TYPES, UI_COLOR, WEAPON_SCALE, WHITE
-from item import Item
-from screen_fade import ScreenFade
+from constants import CAPTION, COLS, FIREBALL_SCALE, FONT_SIZE, ITEM_SCALE, POTION_SCALE, ROWS, SCREEN_HEIGHT, SCREEN_WIDTH, FPS, SCALE, SPEED, TILE_SIZE, TILE_TYPES, WEAPON_SCALE
+from colours import BLACK, RED, PINK, LIGHT_BLACK
+from fader import Fader
+from ui_manager import UiManager
+from utils import build_path, scale_img
 from weapon import Weapon
 from world import World
-
-import sys
-import os
-
-def resource_path(relative_path):
-    try:
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.abspath(".")
-
-    return os.path.join(base_path, relative_path)
 
 mixer.init()
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Dungeon Crawler")
+pygame.display.set_caption(CAPTION)
 
 clock = pygame.time.Clock()
-font = pygame.font.Font(resource_path("assets/fonts/AtariClassic.ttf"), FONT_SIZE)
+font = pygame.font.Font(build_path("assets/fonts/AtariClassic.ttf"), FONT_SIZE)
+ui_manager = UiManager()
 level = 1
 start_game = False
 pause_game = False
@@ -36,122 +28,26 @@ moving_right = False
 moving_up = False
 moving_down = False
 
-def scale_img(image, scale):
-    width = image.get_width()
-    height = image.get_height()
-
-    return pygame.transform.scale(image, (width * scale, height * scale))
-
 # Load music and sounds
-pygame.mixer.music.load(resource_path("assets/audio/music.wav"))
+pygame.mixer.music.load(build_path("assets/audio/music.wav"))
 pygame.mixer.music.set_volume(0.3)
 pygame.mixer.music.play(-1, 0.0, 5000)
-shot_fx =pygame.mixer.Sound(resource_path("assets/audio/arrow_shot.mp3"))
+shot_fx =pygame.mixer.Sound(build_path("assets/audio/arrow_shot.mp3"))
 shot_fx.set_volume(0.5)
-hit_fx =pygame.mixer.Sound(resource_path("assets/audio/arrow_hit.wav"))
+hit_fx =pygame.mixer.Sound(build_path("assets/audio/arrow_hit.wav"))
 hit_fx.set_volume(0.5)
-coin_fx =pygame.mixer.Sound(resource_path("assets/audio/coin.wav"))
+coin_fx =pygame.mixer.Sound(build_path("assets/audio/coin.wav"))
 coin_fx.set_volume(0.5)
-heal_fx =pygame.mixer.Sound(resource_path("assets/audio/heal.wav"))
+heal_fx =pygame.mixer.Sound(build_path("assets/audio/heal.wav"))
 heal_fx.set_volume(0.5)
-# Load characters images
-char_types = ["elf", "imp", "skeleton", "goblin", "muddy", "tiny_zombie", "big_demon"]
-chars_animations = []
-char_animation_types = ["idle", "run"]
-
-for char in char_types:
-    char_animations = []
-    for animation in char_animation_types:
-        char_animation = []
-
-        for i in range(4):
-            img = pygame.image.load(resource_path(f"assets/images/characters/{char}/{animation}/{i}.png")).convert_alpha()
-            img = scale_img(img, SCALE)
-            char_animation.append(img)
-
-        char_animations.append(char_animation)
-
-    chars_animations.append(char_animations)
 
 # Load weapon images
-bow_image = scale_img(pygame.image.load(resource_path("assets/images/weapons/bow.png")).convert_alpha(), WEAPON_SCALE)
-arrow_image = scale_img(pygame.image.load(resource_path("assets/images/weapons/arrow.png")).convert_alpha(), WEAPON_SCALE)
-fireball_image = scale_img(pygame.image.load(resource_path("assets/images/weapons/fireball.png")).convert_alpha(), FIREBALL_SCALE)
+bow_image = scale_img(pygame.image.load(build_path("assets/images/weapons/bow.png")).convert_alpha(), WEAPON_SCALE)
+arrow_image = scale_img(pygame.image.load(build_path("assets/images/weapons/arrow.png")).convert_alpha(), WEAPON_SCALE)
+fireball_image = scale_img(pygame.image.load(build_path("assets/images/weapons/fireball.png")).convert_alpha(), FIREBALL_SCALE)
 
-# Load button images
-start_button_image = scale_img(pygame.image.load(resource_path("assets/images/buttons/button_start.png")).convert_alpha(), BUTTON_SCALE)
-exit_button_image = scale_img(pygame.image.load(resource_path("assets/images/buttons/button_exit.png")).convert_alpha(), BUTTON_SCALE)
-resume_button_image = scale_img(pygame.image.load(resource_path("assets/images/buttons/button_resume.png")).convert_alpha(), BUTTON_SCALE)
-restart_button_image = scale_img(pygame.image.load(resource_path("assets/images/buttons/button_restart.png")).convert_alpha(), BUTTON_SCALE)
-
-# Load heart images
-empty_heart = scale_img(pygame.image.load(resource_path("assets/images/items/heart_empty.png")).convert_alpha(), ITEM_SCALE)
-half_heart = scale_img(pygame.image.load(resource_path("assets/images/items/heart_half.png")).convert_alpha(), ITEM_SCALE)
-full_heart = scale_img(pygame.image.load(resource_path("assets/images/items/heart_full.png")).convert_alpha(), ITEM_SCALE)
-
-# Load coin images
-coin_images = []
-for i in range(4):
-    img = scale_img(pygame.image.load(resource_path(f"assets/images/items/coin_f{i}.png")).convert_alpha(), ITEM_SCALE)
-    coin_images.append(img)
-
-# Load potion image
-red_potion_images = [scale_img(pygame.image.load(resource_path(f"assets/images/items/potion_red.png")).convert_alpha(), POTION_SCALE)]
-
-items_images = []
-items_images.append(coin_images)
-items_images.append(red_potion_images)
-
-# Load map tiles
-tiles = []
-for x in range(TILE_TYPES):
-    tile = pygame.image.load(resource_path(f"assets/images/tiles/{x}.png")).convert_alpha()
-    tile = pygame.transform.scale(tile, (TILE_SIZE, TILE_SIZE))
-    tiles.append(tile)
-
-def draw_text(text, font, text_color, x, y):
-    img = font.render(text, True, text_color)
-    screen.blit(img, (x, y))
-
-def draw_grid():
-    for x in range(30):
-        pygame.draw.line(screen, WHITE, (x * TILE_SIZE, 0), (x * TILE_SIZE, SCREEN_HEIGHT))
-        pygame.draw.line(screen, WHITE, (0, x * TILE_SIZE), (SCREEN_WIDTH, x * TILE_SIZE))
-
-def draw_ui(player):
-    # Draw UI panel
-    pygame.draw.rect(screen, UI_COLOR, (0, 0, SCREEN_WIDTH, 50))
-    pygame.draw.line(screen, WHITE, (0, 50), (SCREEN_WIDTH, 50))
-
-    half_heart_drawn = False
-    for i in range(5):
-        pos = (10 + i * 50, 0)
-        if player.health >= ((i + 1) * 20):
-            screen.blit(full_heart, pos)
-        elif (player.health % 20 > 0) and half_heart_drawn == False:
-            half_heart_drawn = True
-            screen.blit(half_heart, pos)
-        else:
-            screen.blit(empty_heart, pos)
-    draw_text(f"LEVEL: {str(level)}", font, WHITE, SCREEN_WIDTH / 2, 15)
-    draw_text(f"X{player.total_score}", font, WHITE, SCREEN_WIDTH - 100, 15)
-
-def load_map():
-    map = []
-    for row in range(ROWS):
-        r = [-1] * COLS
-        map.append(r)
-
-    with open(resource_path(f"levels/level{level}_data.csv"), newline="") as csvfile:
-        reader = csv.reader(csvfile, delimiter=",")
-        for y, row in enumerate(reader):
-            for x, col in enumerate(row):
-                map[y][x] = int(col)
-    
-    world = World()
-    world.map(map, tiles, items_images, chars_animations)
-
-    return world
+world = World()
+world.load_map(current_level=level)
 
 def reload_map():
     damage_text_group.empty()
@@ -159,7 +55,10 @@ def reload_map():
     item_group.empty()
     fireball_group.empty()
 
-    return load_map()
+    world = World()
+    world.load_map(current_level=level)
+
+    return world
 
 class DamageText(pygame.sprite.Sprite):
     def __init__(self, x, y, damage, color):
@@ -177,8 +76,6 @@ class DamageText(pygame.sprite.Sprite):
         self.counter += 1
         if self.counter > 30:
             self.kill()
-    
-world = load_map()
 
 player = world.player
 enemies = world.enemies
@@ -187,21 +84,17 @@ bow = Weapon(bow_image, arrow_image)
 arrow_group = pygame.sprite.Group()
 damage_text_group = pygame.sprite.Group()
 item_group = pygame.sprite.Group()
-ui_item_group = pygame.sprite.Group()
 fireball_group = pygame.sprite.Group()
-
-ui_coin = Item(SCREEN_WIDTH - 115, 23, 0, coin_images)
-ui_item_group.add(ui_coin)
 
 for item in world.items:
     item_group.add(item)
 
-intro_fade_in = ScreenFade(BLACK, 4)
-death_fade_out = ScreenFade(PINK, 4)
-start_button = Button(SCREEN_WIDTH // 2 - 145, SCREEN_HEIGHT // 2 - 150, start_button_image)
-exit_button = Button(SCREEN_WIDTH // 2 - 110, SCREEN_HEIGHT // 2 + 50, exit_button_image)
-resume_button = Button(SCREEN_WIDTH // 2 - 175, SCREEN_HEIGHT // 2 - 150, resume_button_image)
-restart_button = Button(SCREEN_WIDTH // 2 - 175, SCREEN_HEIGHT // 2 - 50, restart_button_image)
+intro_fade_in = Fader(BLACK, 4)
+death_fade_out = Fader(PINK, 4)
+start_button = Button(SCREEN_WIDTH // 2 - 145, SCREEN_HEIGHT // 2 - 150, "assets/images/buttons/button_start.png")
+exit_button = Button(SCREEN_WIDTH // 2 - 110, SCREEN_HEIGHT // 2 + 50, "assets/images/buttons/button_exit.png")
+resume_button = Button(SCREEN_WIDTH // 2 - 175, SCREEN_HEIGHT // 2 - 150, "assets/images/buttons/button_resume.png")
+restart_button = Button(SCREEN_WIDTH // 2 - 175, SCREEN_HEIGHT // 2 - 50, "assets/images/buttons/button_restart.png")
 
 # Game Loop
 run = True
@@ -209,7 +102,7 @@ while run:
     clock.tick(FPS)
 
     if not start_game:
-        screen.fill(MENU_COLOUR)
+        screen.fill(LIGHT_BLACK)
         if start_button.draw(screen):
             start_game = True
             start_intro = True
@@ -224,10 +117,7 @@ while run:
                 run = False
 
         if not pause_game:
-            screen.fill(BACKGROUND_COLOR)
-
-            if GRID:
-                draw_grid()
+            screen.fill(LIGHT_BLACK)
 
             if player.alive:
                 dx = 0
@@ -280,10 +170,7 @@ while run:
             fireball_group.update(screen_scroll, world.obstacle_tiles, player)
             fireball_group.draw(screen)
 
-            draw_ui(player)
-
-            ui_item_group.update(player)
-            ui_item_group.draw(screen)
+            ui_manager.draw_ui(surface=screen, current_level=level, player_health=player.health, player_score=player.total_score)
 
             if level_completed:
                 start_intro = True

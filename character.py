@@ -1,6 +1,7 @@
 import math
 import pygame
-from constants import ATTACK_RANGE, COLLIDE_RECT, ENEMY_SPEED, OFFSET, RANGE, RED, SCALE, SCREEN_HEIGHT, SCREEN_WIDTH, SCROLL_THRESH, TILE_SIZE
+from constants import ATTACK_RANGE, COLLIDE_RECT, ENEMY_SPEED, OFFSET, RANGE, SCALE, SCREEN_HEIGHT, SCROLL_THRESH, TILE_SIZE
+from colours import RED
 from weapon import Fireball
 
 class Character():

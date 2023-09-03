@@ -1,8 +1,11 @@
 import pygame
 
+from constants import BUTTON_SCALE
+from utils import build_path, scale_img
+
 class Button():
-    def __init__(self, x, y, image) -> None:
-        self.image = image
+    def __init__(self, x, y, asset_path) -> None:
+        self.image = scale_img(pygame.image.load(build_path(asset_path)).convert_alpha(), BUTTON_SCALE)
         self.rect = self.image.get_rect()
         self.rect.topleft = (x, y)
 

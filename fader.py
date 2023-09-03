@@ -2,7 +2,7 @@ import pygame
 from constants import SCREEN_HEIGHT, SCREEN_WIDTH
 
 
-class ScreenFade():
+class Fader():
     def __init__(self, colour, speed):
         self.colour = colour
         self.speed = speed
