@@ -7,13 +7,24 @@ from item import Item
 from weapon import Weapon
 from world import World
 
+import sys
+import os
+
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 mixer.init()
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Dungeon Crawler")
 
 clock = pygame.time.Clock()
-font = pygame.font.Font("assets/fonts/AtariClassic.ttf", FONT_SIZE)
+font = pygame.font.Font(resource_path("assets/fonts/AtariClassic.ttf"), FONT_SIZE)
 level = 1
 start_game = False
 pause_game = False
@@ -31,16 +42,16 @@ def scale_img(image, scale):
     return pygame.transform.scale(image, (width * scale, height * scale))
 
 # Load music and sounds
-pygame.mixer.music.load("assets/audio/music.wav")
+pygame.mixer.music.load(resource_path("assets/audio/music.wav"))
 pygame.mixer.music.set_volume(0.3)
 pygame.mixer.music.play(-1, 0.0, 5000)
-shot_fx =pygame.mixer.Sound("assets/audio/arrow_shot.mp3")
+shot_fx =pygame.mixer.Sound(resource_path("assets/audio/arrow_shot.mp3"))
 shot_fx.set_volume(0.5)
-hit_fx =pygame.mixer.Sound("assets/audio/arrow_hit.wav")
+hit_fx =pygame.mixer.Sound(resource_path("assets/audio/arrow_hit.wav"))
 hit_fx.set_volume(0.5)
-coin_fx =pygame.mixer.Sound("assets/audio/coin.wav")
+coin_fx =pygame.mixer.Sound(resource_path("assets/audio/coin.wav"))
 coin_fx.set_volume(0.5)
-heal_fx =pygame.mixer.Sound("assets/audio/heal.wav")
+heal_fx =pygame.mixer.Sound(resource_path("assets/audio/heal.wav"))
 heal_fx.set_volume(0.5)
 # Load characters images
 char_types = ["elf", "imp", "skeleton", "goblin", "muddy", "tiny_zombie", "big_demon"]
@@ -53,7 +64,7 @@ for char in char_types:
         char_animation = []
 
         for i in range(4):
-            img = pygame.image.load(f"assets/images/characters/{char}/{animation}/{i}.png").convert_alpha()
+            img = pygame.image.load(resource_path(f"assets/images/characters/{char}/{animation}/{i}.png")).convert_alpha()
             img = scale_img(img, SCALE)
             char_animation.append(img)
 
@@ -62,29 +73,29 @@ for char in char_types:
     chars_animations.append(char_animations)
 
 # Load weapon images
-bow_image = scale_img(pygame.image.load("assets/images/weapons/bow.png").convert_alpha(), WEAPON_SCALE)
-arrow_image = scale_img(pygame.image.load("assets/images/weapons/arrow.png").convert_alpha(), WEAPON_SCALE)
-fireball_image = scale_img(pygame.image.load("assets/images/weapons/fireball.png").convert_alpha(), FIREBALL_SCALE)
+bow_image = scale_img(pygame.image.load(resource_path("assets/images/weapons/bow.png")).convert_alpha(), WEAPON_SCALE)
+arrow_image = scale_img(pygame.image.load(resource_path("assets/images/weapons/arrow.png")).convert_alpha(), WEAPON_SCALE)
+fireball_image = scale_img(pygame.image.load(resource_path("assets/images/weapons/fireball.png")).convert_alpha(), FIREBALL_SCALE)
 
 # Load button images
-start_button_image = scale_img(pygame.image.load("assets/images/buttons/button_start.png").convert_alpha(), BUTTON_SCALE)
-exit_button_image = scale_img(pygame.image.load("assets/images/buttons/button_exit.png").convert_alpha(), BUTTON_SCALE)
-resume_button_image = scale_img(pygame.image.load("assets/images/buttons/button_resume.png").convert_alpha(), BUTTON_SCALE)
-restart_button_image = scale_img(pygame.image.load("assets/images/buttons/button_restart.png").convert_alpha(), BUTTON_SCALE)
+start_button_image = scale_img(pygame.image.load(resource_path("assets/images/buttons/button_start.png")).convert_alpha(), BUTTON_SCALE)
+exit_button_image = scale_img(pygame.image.load(resource_path("assets/images/buttons/button_exit.png")).convert_alpha(), BUTTON_SCALE)
+resume_button_image = scale_img(pygame.image.load(resource_path("assets/images/buttons/button_resume.png")).convert_alpha(), BUTTON_SCALE)
+restart_button_image = scale_img(pygame.image.load(resource_path("assets/images/buttons/button_restart.png")).convert_alpha(), BUTTON_SCALE)
 
 # Load heart images
-empty_heart = scale_img(pygame.image.load("assets/images/items/heart_empty.png").convert_alpha(), ITEM_SCALE)
-half_heart = scale_img(pygame.image.load("assets/images/items/heart_half.png").convert_alpha(), ITEM_SCALE)
-full_heart = scale_img(pygame.image.load("assets/images/items/heart_full.png").convert_alpha(), ITEM_SCALE)
+empty_heart = scale_img(pygame.image.load(resource_path("assets/images/items/heart_empty.png")).convert_alpha(), ITEM_SCALE)
+half_heart = scale_img(pygame.image.load(resource_path("assets/images/items/heart_half.png")).convert_alpha(), ITEM_SCALE)
+full_heart = scale_img(pygame.image.load(resource_path("assets/images/items/heart_full.png")).convert_alpha(), ITEM_SCALE)
 
 # Load coin images
 coin_images = []
 for i in range(4):
-    img = scale_img(pygame.image.load(f"assets/images/items/coin_f{i}.png").convert_alpha(), ITEM_SCALE)
+    img = scale_img(pygame.image.load(resource_path(f"assets/images/items/coin_f{i}.png")).convert_alpha(), ITEM_SCALE)
     coin_images.append(img)
 
 # Load potion image
-red_potion_images = [scale_img(pygame.image.load(f"assets/images/items/potion_red.png").convert_alpha(), POTION_SCALE)]
+red_potion_images = [scale_img(pygame.image.load(resource_path(f"assets/images/items/potion_red.png")).convert_alpha(), POTION_SCALE)]
 
 items_images = []
 items_images.append(coin_images)
@@ -93,7 +104,7 @@ items_images.append(red_potion_images)
 # Load map tiles
 tiles = []
 for x in range(TILE_TYPES):
-    tile = pygame.image.load(f"assets/images/tiles/{x}.png").convert_alpha()
+    tile = pygame.image.load(resource_path(f"assets/images/tiles/{x}.png")).convert_alpha()
     tile = pygame.transform.scale(tile, (TILE_SIZE, TILE_SIZE))
     tiles.append(tile)
 
@@ -130,7 +141,7 @@ def load_map():
         r = [-1] * COLS
         map.append(r)
 
-    with open(f"levels/level{level}_data.csv", newline="") as csvfile:
+    with open(resource_path(f"levels/level{level}_data.csv"), newline="") as csvfile:
         reader = csv.reader(csvfile, delimiter=",")
         for y, row in enumerate(reader):
             for x, col in enumerate(row):

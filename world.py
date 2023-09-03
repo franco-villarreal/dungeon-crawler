@@ -55,7 +55,6 @@ class World():
     
     def update(self, screen_scroll=[0,0]):
         for tile in self.map_tiles:
-            print(tile[2])
             tile[2] += screen_scroll[0]
             tile[3] += screen_scroll[1]
             tile[1].center = (tile[2], tile[3])
