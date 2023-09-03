@@ -1,15 +1,15 @@
 import math
 import random
 import pygame
-from constants import FIREBALL_SPEED, SCREEN_WIDTH, SCREEN_HEIGHT, ARROW_SPEED
+from constants import FIREBALL_SCALE, FIREBALL_SPEED, SCREEN_WIDTH, SCREEN_HEIGHT, ARROW_SPEED, WEAPON_SCALE
+from utils import build_path, scale_img
 
 class Weapon():
-    def __init__(self, image, arrow_image) -> None:
+    def __init__(self, image) -> None:
         self.angle = 0
         self.original_image = image
         self.image = pygame.transform.rotate(self.original_image, self.angle)
         self.rect = self.image.get_rect()
-        self.arrow_image = arrow_image
         self.fired = False
         self.last_shot = pygame.time.get_ticks()
 
@@ -24,7 +24,7 @@ class Weapon():
         shot_cooldown = 300
         # Get mouse left-click:0
         if pygame.mouse.get_pressed()[0] and self.fired == False and (pygame.time.get_ticks() - self.last_shot) >= shot_cooldown:
-            arrow = Arrow(self.arrow_image, self.rect.centerx, self.rect.centery, self.angle)
+            arrow = Arrow(self.rect.centerx, self.rect.centery, self.angle)
             self.fired = True
             self.last_shot = pygame.time.get_ticks()
         
@@ -37,11 +37,15 @@ class Weapon():
         self.image = pygame.transform.rotate(self.original_image, self.angle)
         surface.blit(self.image, ((self.rect.centerx - int(self.image.get_width()/2)), self.rect.centery - int(self.image.get_height()/2)))
 
+class Bow(Weapon):
+    def __init__(self) -> None:
+        super().__init__(scale_img(pygame.image.load(build_path("assets/images/weapons/bow.png")).convert_alpha(), WEAPON_SCALE))
+        
 class Arrow(pygame.sprite.Sprite):
-    def __init__(self, image, x, y, angle):
+    def __init__(self, x, y, angle):
         pygame.sprite.Sprite.__init__(self)
         self.angle = angle
-        self.original_image = image
+        self.original_image = scale_img(pygame.image.load(build_path("assets/images/weapons/arrow.png")).convert_alpha(), WEAPON_SCALE)
         self.image = pygame.transform.rotate(self.original_image, self.angle - 90)
         self.rect = self.image.get_rect()
         self.rect.center = (x, y)
@@ -78,9 +82,9 @@ class Arrow(pygame.sprite.Sprite):
         surface.blit(self.image, ((self.rect.centerx - int(self.image.get_width()/2)), self.rect.centery - int(self.image.get_height()/2)))
 
 class Fireball(pygame.sprite.Sprite):
-    def __init__(self, image, x, y, target_x, target_y):
+    def __init__(self, x, y, target_x, target_y):
         pygame.sprite.Sprite.__init__(self)
-        self.original_image = image
+        self.original_image = scale_img(pygame.image.load(build_path("assets/images/weapons/fireball.png")).convert_alpha(), FIREBALL_SCALE)
         x_dist = target_x - x
         y_dist = -(target_y - y)
         self.angle = math.degrees(math.atan2(y_dist, x_dist))

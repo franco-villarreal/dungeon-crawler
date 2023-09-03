@@ -12,6 +12,7 @@ a = Analysis(
         ('assets/fonts', 'assets/fonts'),
         ('assets/images', 'assets/images'),
         ('levels', 'levels'),
+        ('audio_manager.py', '.'),
         ('button.py', '.'),
         ('character.py', '.'),
         ('colours.py', '.'),

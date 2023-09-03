@@ -1,22 +1,19 @@
 import pygame
-from pygame import mixer
-import csv
+from audio_manager import AudioManager
 from button import Button
-from constants import CAPTION, COLS, FIREBALL_SCALE, FONT_SIZE, ITEM_SCALE, POTION_SCALE, ROWS, SCREEN_HEIGHT, SCREEN_WIDTH, FPS, SCALE, SPEED, TILE_SIZE, TILE_TYPES, WEAPON_SCALE
+from constants import CAPTION, SCREEN_HEIGHT, SCREEN_WIDTH, FPS, SPEED
 from colours import BLACK, RED, PINK, LIGHT_BLACK
+from damage_text import DamageText
 from fader import Fader
 from ui_manager import UiManager
-from utils import build_path, scale_img
-from weapon import Weapon
+from weapon import Bow
 from world import World
 
-mixer.init()
 pygame.init()
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption(CAPTION)
-
 clock = pygame.time.Clock()
-font = pygame.font.Font(build_path("assets/fonts/AtariClassic.ttf"), FONT_SIZE)
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+audio_manager = AudioManager()
 ui_manager = UiManager()
 level = 1
 start_game = False
@@ -27,60 +24,11 @@ moving_left = False
 moving_right = False
 moving_up = False
 moving_down = False
-
-# Load music and sounds
-pygame.mixer.music.load(build_path("assets/audio/music.wav"))
-pygame.mixer.music.set_volume(0.3)
-pygame.mixer.music.play(-1, 0.0, 5000)
-shot_fx =pygame.mixer.Sound(build_path("assets/audio/arrow_shot.mp3"))
-shot_fx.set_volume(0.5)
-hit_fx =pygame.mixer.Sound(build_path("assets/audio/arrow_hit.wav"))
-hit_fx.set_volume(0.5)
-coin_fx =pygame.mixer.Sound(build_path("assets/audio/coin.wav"))
-coin_fx.set_volume(0.5)
-heal_fx =pygame.mixer.Sound(build_path("assets/audio/heal.wav"))
-heal_fx.set_volume(0.5)
-
-# Load weapon images
-bow_image = scale_img(pygame.image.load(build_path("assets/images/weapons/bow.png")).convert_alpha(), WEAPON_SCALE)
-arrow_image = scale_img(pygame.image.load(build_path("assets/images/weapons/arrow.png")).convert_alpha(), WEAPON_SCALE)
-fireball_image = scale_img(pygame.image.load(build_path("assets/images/weapons/fireball.png")).convert_alpha(), FIREBALL_SCALE)
-
 world = World()
 world.load_map(current_level=level)
-
-def reload_map():
-    damage_text_group.empty()
-    arrow_group.empty()
-    item_group.empty()
-    fireball_group.empty()
-
-    world = World()
-    world.load_map(current_level=level)
-
-    return world
-
-class DamageText(pygame.sprite.Sprite):
-    def __init__(self, x, y, damage, color):
-        pygame.sprite.Sprite.__init__(self)
-        self.image = font.render(damage, True, color)
-        self.rect = self.image.get_rect()
-        self.rect.center = (x, y)
-        self.counter = 0
-
-    def update(self, screen_scroll):
-        self.rect.x += screen_scroll[0]
-        self.rect.y += screen_scroll[1]
-
-        self.rect.y -= 1
-        self.counter += 1
-        if self.counter > 30:
-            self.kill()
-
 player = world.player
 enemies = world.enemies
-bow = Weapon(bow_image, arrow_image)
-
+bow = Bow()
 arrow_group = pygame.sprite.Group()
 damage_text_group = pygame.sprite.Group()
 item_group = pygame.sprite.Group()
@@ -96,7 +44,6 @@ exit_button = Button(SCREEN_WIDTH // 2 - 110, SCREEN_HEIGHT // 2 + 50, "assets/i
 resume_button = Button(SCREEN_WIDTH // 2 - 175, SCREEN_HEIGHT // 2 - 150, "assets/images/buttons/button_resume.png")
 restart_button = Button(SCREEN_WIDTH // 2 - 175, SCREEN_HEIGHT // 2 - 50, "assets/images/buttons/button_restart.png")
 
-# Game Loop
 run = True
 while run:
     clock.tick(FPS)
@@ -139,15 +86,15 @@ while run:
                 arrow = bow.update(player)
 
                 if arrow:
-                    shot_fx.play()
+                    audio_manager.shot_fx.play()
                     arrow_group.add(arrow)
                     
             world.draw(screen)
-            player.draw(screen)    
+            player.draw(screen)   
             bow.draw(screen)
 
             for enemy in enemies:
-                fireball = enemy.ai(player, world.obstacle_tiles, screen_scroll, fireball_image)
+                fireball = enemy.ai(player, world.obstacle_tiles, screen_scroll)
                 if fireball:
                     fireball_group.add(fireball)
                 enemy.update()
@@ -156,7 +103,7 @@ while run:
             for arrow in arrow_group:
                 damage, damage_pos = arrow.update(screen_scroll, world.obstacle_tiles, enemies)
                 if damage > 0 and damage_pos:
-                    hit_fx.play()
+                    audio_manager.hit_fx.play()
                     damage_text = DamageText(damage_pos.centerx, damage_pos.y, str(damage), RED)
                     damage_text_group.add(damage_text)
                 arrow.draw(screen)
@@ -164,7 +111,7 @@ while run:
             damage_text_group.update(screen_scroll)
             damage_text_group.draw(screen)
 
-            item_group.update(player, screen_scroll, [coin_fx, heal_fx])
+            item_group.update(player, screen_scroll, [audio_manager.coin_fx, audio_manager.heal_fx])
             item_group.draw(screen)
 
             fireball_group.update(screen_scroll, world.obstacle_tiles, player)
@@ -177,7 +124,12 @@ while run:
                 level += 1
                 temp_player_score = player.total_score
                 temp_player_health= player.health
-                world = reload_map()
+                damage_text_group.empty()
+                arrow_group.empty()
+                item_group.empty()
+                fireball_group.empty()
+                world = World()
+                world.load_map(current_level=level)
                 player = world.player
                 player.total_score = temp_player_score
                 player.health = temp_player_health
@@ -202,7 +154,7 @@ while run:
 
                         for item in world.items:
                             item_group.add(item)
-    #event-handler
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False

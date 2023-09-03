@@ -89,7 +89,7 @@ class Character():
 
         return screen_scroll, level_completed
 
-    def ai(self, player, obstacles, screen_scroll, fireball_image = None):
+    def ai(self, player, obstacles, screen_scroll):
         dx = 0
         dy = 0
         clipped_line = ()
@@ -131,7 +131,7 @@ class Character():
             if self.boss:
                 if player_distance < 500:
                     if pygame.time.get_ticks() - self.last_attack >= fireball_cooldown:
-                        fireball = Fireball(fireball_image, self.rect.centerx, self.rect.centery, player.rect.centerx, player.rect.centery)
+                        fireball = Fireball(self.rect.centerx, self.rect.centery, player.rect.centerx, player.rect.centery)
                         self.last_attack = pygame.time.get_ticks()
         elif (pygame.time.get_ticks() - self.stunned_time) > stun_cooldown:
             self.stunned = False
