@@ -16,6 +16,7 @@ a = Analysis(
         ('character.py', '.'),
         ('constants.py', '.'),
         ('item.py', '.'),
+        ('screen_fade.py', '.'),
         ('weapon.py', '.'),
         ('world.py', '.'),
     ],
