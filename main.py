@@ -4,6 +4,7 @@ import csv
 from button import Button
 from constants import BLACK, BUTTON_SCALE, COLS, FIREBALL_SCALE, GRID, FONT_SIZE, ITEM_SCALE, MENU_COLOUR, PINK, POTION_SCALE, RED, ROWS, SCREEN_HEIGHT, SCREEN_WIDTH, FPS, SCALE, SPEED, BACKGROUND_COLOR, TILE_SIZE, TILE_TYPES, UI_COLOR, WEAPON_SCALE, WHITE
 from item import Item
+from screen_fade import ScreenFade
 from weapon import Weapon
 from world import World
 
@@ -176,37 +177,6 @@ class DamageText(pygame.sprite.Sprite):
         self.counter += 1
         if self.counter > 30:
             self.kill()
-
-class ScreenFade():
-    def __init__(self, colour, speed):
-        self.colour = colour
-        self.speed = speed
-        self.fade_counter = 0
-    
-    def fade_in(self):
-        completed = False
-        self.fade_counter += self.speed
-      
-        pygame.draw.rect(screen, self.colour, (0 - self.fade_counter, 0, SCREEN_WIDTH // 2, SCREEN_HEIGHT))
-        pygame.draw.rect(screen, self.colour, (SCREEN_WIDTH // 2 + self.fade_counter, 0, SCREEN_WIDTH, SCREEN_HEIGHT))
-        pygame.draw.rect(screen, self.colour, (0, 0 - self.fade_counter, SCREEN_WIDTH, SCREEN_HEIGHT // 2))
-        pygame.draw.rect(screen, self.colour, (0, SCREEN_HEIGHT // 2 + self.fade_counter, SCREEN_WIDTH, SCREEN_HEIGHT))
-    
-        if self.fade_counter >= SCREEN_WIDTH:
-            completed = True
-
-        return completed
-    
-    def fade_out(self):
-        completed = False
-        self.fade_counter += self.speed
-
-        pygame.draw.rect(screen, self.colour, (0, 0, SCREEN_WIDTH, 0 + self.fade_counter))
-
-        if self.fade_counter >= SCREEN_WIDTH:
-            completed = True
-
-        return completed
     
 world = load_map()
 
@@ -330,12 +300,12 @@ while run:
                     item_group.add(item)
             
             if start_intro:
-                if intro_fade_in.fade_in():
+                if intro_fade_in.fade_in(screen):
                     start_intro = False
                     intro_fade_in.fade_counter = 0
             
             if not player.alive:
-                if death_fade_out.fade_out():
+                if death_fade_out.fade_out(screen):
                     if restart_button.draw(screen):
                         death_fade_out.fade_counter = 0
                         start_intro = True
