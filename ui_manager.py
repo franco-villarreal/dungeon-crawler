@@ -1,7 +1,7 @@
 import pygame
 from button import Button
-from colours import BLACK, GREY, LIGHT_BLACK, PINK, WHITE
-from constants import FONT_SIZE, GRID, ITEM_SCALE, SCREEN_HEIGHT, SCREEN_WIDTH, TILE_SIZE
+from colours import BLACK, GREY, LIGHT_BLACK, WHITE
+from constants import FONT_SIZE, SHOW_GRID, ITEM_SCALE, SCREEN_HEIGHT, SCREEN_WIDTH, TILE_SIZE
 from fader import Fader
 from utils import build_path, scale_img
 
@@ -23,7 +23,7 @@ class UiManager():
         surface.blit(img, (x, y))
 
     def draw_ui(self, surface, current_level, player_health, player_score):
-        if GRID:
+        if SHOW_GRID:
             for x in range(30):
                 pygame.draw.line(surface, WHITE, (x * TILE_SIZE, 0), (x * TILE_SIZE, SCREEN_HEIGHT))
                 pygame.draw.line(surface, WHITE, (0, x * TILE_SIZE), (SCREEN_WIDTH, x * TILE_SIZE))

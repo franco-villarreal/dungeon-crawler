@@ -1,5 +1,4 @@
 import math
-
 import pygame
 from character import Character
 from constants import ATTACK_RANGE, ENEMY_SPEED, RANGE

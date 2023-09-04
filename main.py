@@ -1,9 +1,8 @@
 import pygame
 from audio_manager import AudioManager
 from constants import CAPTION, SCREEN_HEIGHT, SCREEN_WIDTH, FPS, SPEED
-from colours import BLACK, RED, PINK, LIGHT_BLACK
+from colours import RED, LIGHT_BLACK
 from damage_text import DamageText
-from fader import Fader
 from ui_manager import UiManager
 from weapon import Bow
 from world import World

@@ -1,6 +1,6 @@
 import math
 import pygame
-from constants import COLLIDE_RECT, SCALE, TILE_SIZE
+from constants import SHOW_COLLIDE_RECT, SCALE, TILE_SIZE
 from colours import RED
 from utils import build_path, scale_img
 
@@ -130,7 +130,7 @@ class Character():
         flipped_image = pygame.transform.flip(self.image, self.flip, False)
         surface.blit(flipped_image, self.get_draw_coordinates())
 
-        if COLLIDE_RECT:
+        if SHOW_COLLIDE_RECT:
             pygame.draw.rect(surface, RED, self.rect, 1)
 
     def get_draw_coordinates(self):

@@ -1,6 +1,5 @@
 import pygame
 from constants import FONT_SIZE
-
 from utils import build_path
 
 class DamageText(pygame.sprite.Sprite):
