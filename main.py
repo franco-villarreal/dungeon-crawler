@@ -1,6 +1,5 @@
 import pygame
 from audio_manager import AudioManager
-from button import Button
 from constants import CAPTION, SCREEN_HEIGHT, SCREEN_WIDTH, FPS, SPEED
 from colours import BLACK, RED, PINK, LIGHT_BLACK
 from damage_text import DamageText
@@ -39,37 +38,40 @@ for item in world.items:
 
 intro_fade_in = Fader(BLACK, 4)
 death_fade_out = Fader(PINK, 4)
-start_button = Button(SCREEN_WIDTH // 2 - 145, SCREEN_HEIGHT // 2 - 150, "assets/images/buttons/button_start.png")
-exit_button = Button(SCREEN_WIDTH // 2 - 110, SCREEN_HEIGHT // 2 + 50, "assets/images/buttons/button_exit.png")
-resume_button = Button(SCREEN_WIDTH // 2 - 175, SCREEN_HEIGHT // 2 - 150, "assets/images/buttons/button_resume.png")
-restart_button = Button(SCREEN_WIDTH // 2 - 175, SCREEN_HEIGHT // 2 - 50, "assets/images/buttons/button_restart.png")
+
+def reload_world():
+    damage_text_group.empty()
+    arrow_group.empty()
+    item_group.empty()
+    fireball_group.empty()
+    world = World()
+    world.load_map(current_level=level)
+
+    return world
 
 run = True
 while run:
     clock.tick(FPS)
 
     if not start_game:
-        screen.fill(LIGHT_BLACK)
-        if start_button.draw(screen):
+        option = ui_manager.draw_start_menu(screen)
+        if option == "START":
             start_game = True
             start_intro = True
-        if exit_button.draw(screen):
+        if option == "EXIT":
             run = False
-    
-    if start_game:
+    else:
         if pause_game:
-            if resume_button.draw(screen):
+            option = ui_manager.draw_pause_menu(screen)
+            if option == "RESUME":
                 pause_game = False
-            if exit_button.draw(screen):
+            if option == "EXIT":
                 run = False
-
-        if not pause_game:
+        else:
             screen.fill(LIGHT_BLACK)
-
             if player.alive:
                 dx = 0
                 dy = 0
-
                 if moving_right:
                     dx = SPEED
                 if moving_left:
@@ -80,7 +82,6 @@ while run:
                     dy = SPEED
 
                 screen_scroll, level_completed = player.move(dx, dy, world.obstacle_tiles, world.exit_tile)
-            
                 world.update(screen_scroll)
                 player.update()
                 arrow = bow.update(player)
@@ -88,7 +89,18 @@ while run:
                 if arrow:
                     audio_manager.shot_fx.play()
                     arrow_group.add(arrow)
-                    
+            else:
+                if death_fade_out.fade_out(screen):
+                    option = ui_manager.draw_restart_menu(screen)
+                    if option == "RESTART":
+                        death_fade_out.fade_counter = 0
+                        start_intro = True
+                        world = reload_world()
+                        player = world.player
+                        enemies = world.enemies
+
+                        for item in world.items:
+                            item_group.add(item)
             world.draw(screen)
             player.draw(screen)   
             bow.draw(screen)
@@ -124,12 +136,7 @@ while run:
                 level += 1
                 temp_player_score = player.total_score
                 temp_player_health= player.health
-                damage_text_group.empty()
-                arrow_group.empty()
-                item_group.empty()
-                fireball_group.empty()
-                world = World()
-                world.load_map(current_level=level)
+                world = reload_world()
                 player = world.player
                 player.total_score = temp_player_score
                 player.health = temp_player_health
@@ -145,15 +152,11 @@ while run:
             
             if not player.alive:
                 if death_fade_out.fade_out(screen):
-                    if restart_button.draw(screen):
+                    option = ui_manager.draw_restart_menu(screen)
+                    if option == "RESTART":
                         death_fade_out.fade_counter = 0
                         start_intro = True
-                        damage_text_group.empty()
-                        arrow_group.empty()
-                        item_group.empty()
-                        fireball_group.empty()
-                        world = World()
-                        world.load_map(current_level=level)
+                        world = reload_world()
                         player = world.player
                         enemies = world.enemies
 
