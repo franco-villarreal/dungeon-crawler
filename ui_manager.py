@@ -1,7 +1,8 @@
 import pygame
 from button import Button
-from colours import GREY, LIGHT_BLACK, WHITE
+from colours import BLACK, GREY, LIGHT_BLACK, PINK, WHITE
 from constants import FONT_SIZE, GRID, ITEM_SCALE, SCREEN_HEIGHT, SCREEN_WIDTH, TILE_SIZE
+from fader import Fader
 from utils import build_path, scale_img
 
 class UiManager():
@@ -15,6 +16,7 @@ class UiManager():
         self.exit_button = Button(SCREEN_WIDTH // 2 - 110, SCREEN_HEIGHT // 2 + 50, "assets/images/buttons/button_exit.png")
         self.resume_button = Button(SCREEN_WIDTH // 2 - 175, SCREEN_HEIGHT // 2 - 150, "assets/images/buttons/button_resume.png")
         self.restart_button = Button(SCREEN_WIDTH // 2 - 175, SCREEN_HEIGHT // 2 - 50, "assets/images/buttons/button_restart.png")
+        self.black_fader = Fader(BLACK, 4)
 
     def draw_text(self, surface, text, text_color, x, y):
         img = self.font.render(text, True, text_color)
@@ -60,4 +62,13 @@ class UiManager():
     def draw_restart_menu(self, surface):
         if self.restart_button.draw(surface):
             return "RESTART"
+    
+    def fade_in(self, surface):
+        return self.black_fader.fade_in(surface)
+    
+    def fade_out(self, surface):
+        return self.black_fader.fade_out(surface)
+    
+    def reset_faders(self):
+        self.black_fader.fade_counter = 0
         

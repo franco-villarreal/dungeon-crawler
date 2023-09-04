@@ -36,9 +36,6 @@ fireball_group = pygame.sprite.Group()
 for item in world.items:
     item_group.add(item)
 
-intro_fade_in = Fader(BLACK, 4)
-death_fade_out = Fader(PINK, 4)
-
 def reload_world():
     damage_text_group.empty()
     arrow_group.empty()
@@ -48,6 +45,21 @@ def reload_world():
     world.load_map(current_level=level)
 
     return world
+
+def handle_move():
+    dx = 0
+    dy = 0
+
+    if moving_right:
+        dx = SPEED
+    if moving_left:
+        dx = -SPEED
+    if moving_up:
+        dy = -SPEED
+    if moving_down:
+        dy = SPEED
+
+    return dx, dy
 
 run = True
 while run:
@@ -70,17 +82,7 @@ while run:
         else:
             screen.fill(LIGHT_BLACK)
             if player.alive:
-                dx = 0
-                dy = 0
-                if moving_right:
-                    dx = SPEED
-                if moving_left:
-                    dx = -SPEED
-                if moving_up:
-                    dy = -SPEED
-                if moving_down:
-                    dy = SPEED
-
+                dx, dy = handle_move()
                 screen_scroll, level_completed = player.move(dx, dy, world.obstacle_tiles, world.exit_tile)
                 world.update(screen_scroll)
                 player.update()
@@ -90,10 +92,10 @@ while run:
                     audio_manager.shot_fx.play()
                     arrow_group.add(arrow)
             else:
-                if death_fade_out.fade_out(screen):
+                if ui_manager.fade_out(screen):
                     option = ui_manager.draw_restart_menu(screen)
                     if option == "RESTART":
-                        death_fade_out.fade_counter = 0
+                        ui_manager.reset_faders()
                         start_intro = True
                         world = reload_world()
                         player = world.player
@@ -102,7 +104,7 @@ while run:
                         for item in world.items:
                             item_group.add(item)
             world.draw(screen)
-            player.draw(screen)   
+            player.draw(screen)
             bow.draw(screen)
 
             for enemy in enemies:
@@ -122,13 +124,10 @@ while run:
 
             damage_text_group.update(screen_scroll)
             damage_text_group.draw(screen)
-
             item_group.update(player, screen_scroll, [audio_manager.coin_fx, audio_manager.heal_fx])
             item_group.draw(screen)
-
             fireball_group.update(screen_scroll, world.obstacle_tiles, player)
             fireball_group.draw(screen)
-
             ui_manager.draw_ui(surface=screen, current_level=level, player_health=player.health, player_score=player.total_score)
 
             if level_completed:
@@ -146,15 +145,15 @@ while run:
                     item_group.add(item)
             
             if start_intro:
-                if intro_fade_in.fade_in(screen):
+                if ui_manager.fade_in(screen):
+                    ui_manager.reset_faders()
                     start_intro = False
-                    intro_fade_in.fade_counter = 0
             
             if not player.alive:
-                if death_fade_out.fade_out(screen):
+                if ui_manager.fade_out(screen):
                     option = ui_manager.draw_restart_menu(screen)
                     if option == "RESTART":
-                        death_fade_out.fade_counter = 0
+                        ui_manager.reset_faders()
                         start_intro = True
                         world = reload_world()
                         player = world.player
