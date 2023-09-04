@@ -1,10 +1,10 @@
 import pygame
 import csv
-from character import Character
-from constants import COLS, ITEM_SCALE, PLAYER_INITIAL_HEALTH, POTION_SCALE, ROWS, SCALE, TILE_SIZE, TILE_TYPES
+from constants import COLS, ITEM_SCALE, PLAYER_INITIAL_HEALTH, POTION_SCALE, ROWS, TILE_SIZE, TILE_TYPES
+from enemy import Enemy
 from item import Item
+from player import Player
 from utils import build_path, scale_img
-
 
 class World():
     def __init__(self):
@@ -15,7 +15,6 @@ class World():
         self.player = None
         self.enemies = []
         self.tiles = self.load_tiles()
-        self.char_animations = self.load_char_animations()
         self.items_animations = [self.load_coins(), self.load_potions()]
 
     def load_tiles(self):
@@ -26,26 +25,6 @@ class World():
             tiles.append(tile)
 
         return tiles
-    
-    def load_char_animations(self):
-        chars_animations = []
-        char_types = ["elf", "imp", "skeleton", "goblin", "muddy", "tiny_zombie", "big_demon"]
-        char_animation_types = ["idle", "run"]
-
-        for char in char_types:
-            char_animations = []
-            for action in char_animation_types:
-                animation_images = []
-
-                for i in range(4):
-                    img = scale_img(pygame.image.load(build_path(f"assets/images/characters/{char}/{action}/{i}.png")).convert_alpha(), SCALE)
-                    animation_images.append(img)
-
-                char_animations.append(animation_images)
-
-            chars_animations.append(char_animations)
-
-        return chars_animations
     
     def load_coins(self):
         coin_images = []
@@ -96,18 +75,18 @@ class World():
                         self.items.append(red_potion)
                         tile[0] = self.tiles[0]
                     if col == 11:
-                        char_type = 0
-                        player = Character(x=image_x, y=image_y, health=PLAYER_INITIAL_HEALTH, max_health=100, char_type=char_type, animations=self.char_animations[char_type])
+                        char_type = "elf"
+                        player = Player(x=image_x, y=image_y, health=PLAYER_INITIAL_HEALTH, max_health=100, char_type=char_type)
                         self.player = player
                         tile[0] = self.tiles[0]
                     if col >= 12 and col <= 16:
-                        char_type = col - 11
-                        enemy = Character(x=image_x, y=image_y, health=100, max_health=100,char_type=char_type, animations=self.char_animations[char_type])
+                        char_type = "imp" # col - 11 // Create an enum or dictionary
+                        enemy = Enemy(x=image_x, y=image_y, health=100, max_health=100, char_type=char_type)
                         self.enemies.append(enemy)
                         tile[0] = self.tiles[0]
                     if col == 17:
-                        char_type = col - 11
-                        enemy = Character(x=image_x, y=image_y, health=100, max_health=100,char_type=char_type, animations=self.char_animations[char_type], boss=True)
+                        char_type = "big_demon"
+                        enemy = Enemy(x=image_x, y=image_y, health=100, max_health=100, char_type=char_type, boss=True)
                         self.enemies.append(enemy)
                         tile[0] = self.tiles[0]
     

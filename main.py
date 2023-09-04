@@ -148,7 +148,12 @@ while run:
                     if restart_button.draw(screen):
                         death_fade_out.fade_counter = 0
                         start_intro = True
-                        world = reload_map()
+                        damage_text_group.empty()
+                        arrow_group.empty()
+                        item_group.empty()
+                        fireball_group.empty()
+                        world = World()
+                        world.load_map(current_level=level)
                         player = world.player
                         enemies = world.enemies
 
