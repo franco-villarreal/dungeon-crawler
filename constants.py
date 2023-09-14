@@ -1,7 +1,12 @@
+
+import pyautogui
+
+screen_width, screen_height = pyautogui.size()
+
 CAPTION = "Dungeon Crawler"
 FPS = 60
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
+SCREEN_WIDTH = screen_width
+SCREEN_HEIGHT = screen_height
 SCALE = 3
 WEAPON_SCALE = 1.5
 ITEM_SCALE = 3
@@ -24,4 +29,4 @@ ATTACK_RANGE = 60
 PLAYER_INITIAL_HEALTH = 75
 
 SHOW_GRID = False
-SHOW_COLLIDE_RECT = True
+SHOW_COLLIDE_RECT = False

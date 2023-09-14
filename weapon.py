@@ -13,22 +13,25 @@ class Weapon():
         self.rect = self.image.get_rect()
         self.fired = False
         self.last_shot = pygame.time.get_ticks()
+        self.is_shooting = False
 
-    def update(self, player):
+    def update(self, pos, player):
         self.rect.center = player.rect.center
-        pos = pygame.mouse.get_pos()
         x_distance = pos[0] - self.rect.centerx
         y_distance = -(pos[1] - self.rect.centery)
         self.angle = math.degrees(math.atan2(y_distance, x_distance))
 
+        return self.shoot()
+
+    def shoot(self):
         arrow = None
         shot_cooldown = 300
-        if pygame.mouse.get_pressed()[0] and self.fired == False and (pygame.time.get_ticks() - self.last_shot) >= shot_cooldown:
+        if self.is_shooting and self.fired == False and (pygame.time.get_ticks() - self.last_shot) >= shot_cooldown:
             arrow = Arrow(self.rect.centerx, self.rect.centery, self.angle)
             self.fired = True
             self.last_shot = pygame.time.get_ticks()
 
-        if pygame.mouse.get_pressed()[0] == False:
+        if not self.is_shooting:
             self.fired = False
 
         return arrow
