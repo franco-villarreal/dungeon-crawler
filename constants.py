@@ -3,6 +3,12 @@ import pyautogui
 
 screen_width, screen_height = pyautogui.size()
 
+if screen_width > 1920:
+    screen_width = 1920
+if screen_height > 1080:
+    screen_height = 1080
+
+
 CAPTION = "Dungeon Crawler"
 FPS = 60
 SCREEN_WIDTH = screen_width

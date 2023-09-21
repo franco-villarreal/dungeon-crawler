@@ -33,6 +33,7 @@ damage_text_group = pygame.sprite.Group()
 item_group = pygame.sprite.Group()
 fireball_group = pygame.sprite.Group()
 
+joystick = None
 joystick_count = pygame.joystick.get_count()
 if joystick_count > 0:
     joystick = pygame.joystick.Joystick(0)
